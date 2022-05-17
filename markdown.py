@@ -130,7 +130,8 @@ class MarkDown(QtWidget.QWidget):
         tree.setColumnHidden(2, True)
         tree.setColumnHidden(3, True)
 
-        tree.selectionModel().currentRowChanged.connect(self.replaceNote)
+        #tree.selectionModel().currentRowChanged.connect(self.replaceNote)
+        tree.selectionModel().selectionChanged.connect(self.replaceNote)
         # tree.setSizeAdjustPolicy(QtWidget.QAbstractScrollArea.AdjustToContents)
 
         return tree
@@ -147,27 +148,32 @@ class MarkDown(QtWidget.QWidget):
         path = os.path.join(self.rootPath, fn)
         index = self.tree.model().index(path, 0)
         log.info(f"Index of new note is: {index.isValid()} {index.data()}")
-        self.selectNote(index)
+        self.selectNote(fn)
 
         #Update the file viewer too!
         self.updateTreeView(fn)
         self.filenameEdit.setText(fn)
 
     def updateTreeView(self, fn):
+        """Set the currently highlighted file to fn"""
         index = self.tree.model().index(fn)
         self.tree.setCurrentIndex(index)
 
-    def replaceNote(self, item):
-        """Save current note, load new one into editor"""
+    def replaceNote(self, dummy):
+        """Save current note, load new one into editor
+        
+        """
+        log.info(f"In replace note with {dummy}")
+        try:
+            index = self.tree.selectedIndexes()[0]
+        except IndexError:
+            return     
+        path = self.tree.model().fileInfo(index).absoluteFilePath()
 
-        if item.data() is None:
-            log.info("Item has no data. Ignoring")
-            return 
-
-        log.info(f"Changing note from {self.currentFile} to {item.data()}")
+        log.info(f"Changing note from {self.currentFile} to {path}")
         self.saveCurrentNote()
-        self.selectNote(item)
-        self.filenameEdit.setText(item.data())
+        self.selectNote(path)
+        self.filenameEdit.setText(path)
 
     def saveCurrentNote(self):
         if self.currentFile == None:
@@ -175,14 +181,21 @@ class MarkDown(QtWidget.QWidget):
 
         log.info(f"Saving {self.currentFile}")
         text = self.editor.toPlainText()
-        fn = os.path.join(self.rootPath, self.currentFile)
-        with open(fn, 'w') as fp:
+
+        # print(text)
+        # if text == TEMPLATE:
+        #     log.info("File unchanged, not saving"
+        #     )
+        #     os.unlink(self.currentFile)
+        #     return 
+        with open(self.currentFile, 'w') as fp:
             fp.write(text)
 
-    def selectNote(self, item):
-        log.info(f"Selecting {item.data()}")
-        self.currentFile = item.data()
-        with open(os.path.join("./notes", item.data())) as fp:
+    def selectNote(self, filepath):
+        log.info(f"Selecting {filepath}")
+        self.currentFile = filepath
+        # with open(os.path.join(self.rootPath, filepath)) as fp:
+        with open(filepath) as fp:
             text = fp.read()
         self.editor.setText(text)
 
@@ -211,7 +224,8 @@ class MarkDown(QtWidget.QWidget):
 
         self.currentFile = newfn 
         self.saveCurrentNote()
-        os.unlink(os.path.join(self.rootPath, oldfn))
+        # os.unlink(os.path.join(self.rootPath, oldfn))
+        os.unlink(oldfn)
 
     def setCursorPosition(self, qTextEdit, row):
         log.info(f"Setting cursor position to {row}")
@@ -232,7 +246,8 @@ class MarkDown(QtWidget.QWidget):
 def chooseNewFilename(rootPath):
     flist = glob(os.path.join(rootPath, "Untitled*.md"))
     num = len(flist) + 1
-    return "Untitled%02i.md" %(num)
+    fn = "Untitled%02i.md" %(num)
+    return os.path.join(rootPath, fn)
 
     
 def main():
