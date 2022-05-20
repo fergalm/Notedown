@@ -41,8 +41,7 @@ class MarkDown(QtWidget.QWidget):
     """
     Todo:
 
-    x Autosave
-    x Ctrl Q to quit
+    x Autosave2    x Ctrl Q to quit
     x [Ctrl] + [N] for new file
     o Set tabstop to 4 (currently 16?)
     o Auto indent? Interpret shift + tab
@@ -78,15 +77,15 @@ class MarkDown(QtWidget.QWidget):
 
         self.configureShortcutKeys()
         self.createNewNote()
-        # index = self.tree.model().index("Untitled.md")
-        # self.tree.setCurrentIndex(index)
-        # self.filenameEdit.setText("Untitled01")
         self.editor.textChanged.connect(self.updateViewer)
+        setTabWidth(self.editor, 4)
 
     def initLayout(self):
         self.tree = self.createFileList(self.rootPath)
         self.editor = QtWidget.QTextEdit()
-        self.viewer = QtWidget.QTextEdit()  #Maybe a QTextBrowser?
+        # self.viewer = QtWidget.QTextEdit()  
+        # self.editor = MyQTextEdit()
+        self.viewer = QtWidget.QTextBrowser()
         self.filenameEdit = QtWidget.QLineEdit()
 
         self.highlighter = syntax.MarkdownHighlighter(self.editor.document())
@@ -211,7 +210,6 @@ class MarkDown(QtWidget.QWidget):
         # print(linenum, lin2)
         self.setCursorPosition(self.viewer, linenum)
 
-
     def updateFilename(self):
         oldfn = self.currentFile
         log.info(f"old {oldfn}")
@@ -243,11 +241,20 @@ class MarkDown(QtWidget.QWidget):
         self.hide()
 
 
+
 def chooseNewFilename(rootPath):
     flist = glob(os.path.join(rootPath, "Untitled*.md"))
     num = len(flist) + 1
     fn = "Untitled%02i.md" %(num)
     return os.path.join(rootPath, fn)
+
+
+def setTabWidth(textEditor, size):
+    fontMetric = QtGui.QFontMetrics(textEditor.currentCharFormat().font())
+    fontWidth = fontMetric.averageCharWidth()
+    textEditor.setTabStopWidth(size * fontWidth)
+
+
 
     
 def main():
